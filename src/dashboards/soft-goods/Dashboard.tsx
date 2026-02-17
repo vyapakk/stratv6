@@ -16,7 +16,7 @@ import { DashboardHeader, DashboardSkeleton, ScrollToTop, MainNavigation } from 
 import { MarketOverviewTab } from "./MarketOverviewTab";
 import { SegmentDetailTab } from "./SegmentDetailTab";
 
-const ThermoplasticPrepregDashboard = () => {
+const SoftGoodsDashboard = () => {
   const navigate = useNavigate();
   const [selectedYear, setSelectedYear] = useState<number>(config.defaultYear);
   const [activeTab, setActiveTab] = useState<TabType>("overview");
@@ -89,4 +89,4 @@ const ThermoplasticPrepregDashboard = () => {
   );
 };
 
-export default ThermoplasticPrepregDashboard;
+export default SoftGoodsDashboard;
