@@ -15,7 +15,9 @@ interface MarketOverviewTabProps {
   endUserLabel?: string;
   equipmentLabel?: string;
   processTypeLabel?: string;
+  applicationLabel?: string;
   useMillions?: boolean;
+  forecastEndYear?: number;
 }
 
 export function MarketOverviewTab({
@@ -26,15 +28,20 @@ export function MarketOverviewTab({
   endUserLabel = "End User",
   equipmentLabel = "Equipment",
   processTypeLabel = "Process Type",
+  applicationLabel = "Application",
   useMillions = false,
+  forecastEndYear,
 }: MarketOverviewTabProps) {
   const { drillDownState, openDrillDown, closeDrillDown } = useDrillDown();
 
   // Calculate KPI values
+  const lastYear = forecastEndYear ?? marketData.years[marketData.years.length - 1];
+  const firstYear = marketData.years[0];
   const currentMarketValue = marketData.totalMarket.find((d) => d.year === selectedYear)?.value ?? 0;
-  const value2025 = marketData.totalMarket.find((d) => d.year === 2025)?.value ?? 0;
-  const value2034 = marketData.totalMarket.find((d) => d.year === 2034)?.value ?? 0;
-  const cagr2025to2034 = calculateCAGR(value2025, value2034, 9);
+  const valueFirst = marketData.totalMarket.find((d) => d.year === firstYear)?.value ?? 0;
+  const valueLast = marketData.totalMarket.find((d) => d.year === lastYear)?.value ?? 0;
+  const cagrYears = lastYear - firstYear;
+  const cagrValue = calculateCAGR(valueFirst, valueLast, cagrYears);
 
   // Handle slice click for drill-down modal
   const handleSliceClick = (
@@ -83,8 +90,8 @@ export function MarketOverviewTab({
           accentColor="primary"
         />
         <KPICard
-          title="CAGR through 2034"
-          value={cagr2025to2034}
+          title={`CAGR (${firstYear}-${lastYear})`}
+          value={cagrValue}
           prefix=""
           suffix="%"
           icon={BarChart3}
@@ -92,8 +99,8 @@ export function MarketOverviewTab({
           accentColor="chart-4"
         />
         <KPICard
-          title="2034 Forecast"
-          value={useMillions ? value2034 : value2034 / 1000}
+          title={`${lastYear} Forecast`}
+          value={useMillions ? valueLast : valueLast / 1000}
           suffix={useMillions ? "M" : "B"}
           icon={TrendingUp}
           delay={0.2}
@@ -105,7 +112,7 @@ export function MarketOverviewTab({
       <MarketOverviewChart
         data={marketData.totalMarket}
         title="Market Size & YoY Growth Trend"
-        subtitle={`Historical (${marketData.years[0]}-2025) and Forecast (2026-${marketData.years[marketData.years.length - 1]}) data`}
+        subtitle={`${marketData.years[0]}-${marketData.years[marketData.years.length - 1]} data`}
         useMillions={useMillions}
       />
 
@@ -130,6 +137,7 @@ export function MarketOverviewTab({
           endUserLabel={endUserLabel}
           equipmentLabel={equipmentLabel}
           processTypeLabel={processTypeLabel}
+          applicationLabel={applicationLabel}
         />
       </div>
 
