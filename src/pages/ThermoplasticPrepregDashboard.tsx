@@ -24,7 +24,7 @@ const customTabs: TabConfig[] = [
 
 const ThermoplasticPrepregDashboard = () => {
   const navigate = useNavigate();
-  const [selectedYear, setSelectedYear] = useState(2025);
+  const [selectedYear, setSelectedYear] = useState(2026);
   const [activeTab, setActiveTab] = useState<MainTabType>("overview");
   const { data: marketData, isLoading, error, refetch } = useMarketData("/data/thermoplastic-prepreg-market.json");
 
@@ -57,7 +57,7 @@ const ThermoplasticPrepregDashboard = () => {
 
   const renderTabContent = () => {
     if (activeTab === "overview") {
-      return <MarketOverviewTab marketData={marketData} selectedYear={selectedYear} onYearChange={setSelectedYear} onNavigateToTab={setActiveTab} />;
+      return <MarketOverviewTab marketData={marketData} selectedYear={selectedYear} onYearChange={setSelectedYear} onNavigateToTab={setActiveTab} useMillions endUserLabel="End-Use Industry" equipmentLabel="Fiber Type" processTypeLabel="Process Type" applicationLabel="Product Form" />;
     }
     const segmentInfo = getSegmentInfo();
     return (
@@ -89,7 +89,7 @@ const ThermoplasticPrepregDashboard = () => {
         </Button>
 
         <div className="mb-8">
-          <MainNavigation value={activeTab} onChange={setActiveTab} selectedYear={selectedYear} onYearChange={setSelectedYear} showYearSelector tabs={customTabs} />
+          <MainNavigation value={activeTab} onChange={setActiveTab} selectedYear={selectedYear} onYearChange={setSelectedYear} showYearSelector tabs={customTabs} years={marketData.years} />
         </div>
 
         {renderTabContent()}
