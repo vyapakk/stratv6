@@ -84,7 +84,7 @@ const Dashboard = () => {
             </div>
             <div className="flex items-center gap-6">
               <a href="#" className="hover:text-foreground transition-colors">Privacy</a>
-              <a href="#" className="hover:text-foreground transition-colors">Terms</a>
+              <a href="/terms" className="hover:text-foreground transition-colors">Terms</a>
               <a href="mailto:support@stratviewresearch.com" className="hover:text-foreground transition-colors">Support</a>
             </div>
           </div>
