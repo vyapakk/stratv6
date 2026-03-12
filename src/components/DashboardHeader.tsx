@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
-import { Bell, Search, User, Check, X, BarChart3, Database, Lock } from "lucide-react";
+import { Bell, Search, User, Check, X, BarChart3, Database, Lock, BellRing, AlertTriangle, Info } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -14,10 +14,11 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import stratviewLogo from "@/assets/stratview-logo.png";
 import { categories } from "@/data/datasets";
 import { activeDashboardRoutes } from "@/data/dashboardRoutes";
@@ -144,6 +145,17 @@ const DashboardHeader = () => {
     setNotifications((prev) => prev.filter((n) => n.id !== id));
   };
 
+  const getTypeIcon = (type: Notification["type"]) => {
+    switch (type) {
+      case "update":
+        return <BellRing className="h-4 w-4" />;
+      case "alert":
+        return <AlertTriangle className="h-4 w-4" />;
+      case "info":
+        return <Info className="h-4 w-4" />;
+    }
+  };
+
   const getTypeStyles = (type: Notification["type"]) => {
     switch (type) {
       case "update":
@@ -230,84 +242,103 @@ const DashboardHeader = () => {
 
         {/* Right Actions */}
         <div className="flex items-center gap-2">
-          <Popover open={isOpen} onOpenChange={setIsOpen}>
-            <PopoverTrigger asChild>
-              <Button variant="ghost" size="icon" className="relative text-muted-foreground hover:text-foreground">
-                <Bell className="h-5 w-5" />
-                {unreadCount > 0 && (
-                  <span className="absolute -top-0.5 -right-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-destructive text-[10px] font-medium text-destructive-foreground">
-                    {unreadCount}
-                  </span>
-                )}
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent align="end" className="w-80 p-0">
-              <div className="flex items-center justify-between border-b px-4 py-3">
-                <h4 className="font-semibold text-sm">Notifications</h4>
-                {unreadCount > 0 && (
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="text-xs text-muted-foreground hover:text-foreground h-auto py-1 px-2"
-                    onClick={markAllAsRead}
-                  >
-                    Mark all as read
-                  </Button>
-                )}
-              </div>
-              <ScrollArea className="h-[300px]">
+          <Button
+            variant="ghost"
+            size="icon"
+            className="relative text-muted-foreground hover:text-foreground"
+            onClick={() => setIsOpen(true)}
+          >
+            <Bell className="h-5 w-5" />
+            {unreadCount > 0 && (
+              <span className="absolute -top-0.5 -right-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-destructive text-[10px] font-medium text-destructive-foreground">
+                {unreadCount}
+              </span>
+            )}
+          </Button>
+
+          <Dialog open={isOpen} onOpenChange={setIsOpen}>
+            <DialogContent className="sm:max-w-[560px] max-h-[85vh] flex flex-col p-0 gap-0">
+              <DialogHeader className="px-6 py-4 border-b border-border shrink-0">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <DialogTitle className="text-lg font-semibold">Notifications</DialogTitle>
+                    {unreadCount > 0 && (
+                      <Badge variant="secondary" className="text-xs font-medium">
+                        {unreadCount} new
+                      </Badge>
+                    )}
+                  </div>
+                  {unreadCount > 0 && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="text-xs text-muted-foreground hover:text-foreground h-auto py-1.5 px-3"
+                      onClick={markAllAsRead}
+                    >
+                      Mark all as read
+                    </Button>
+                  )}
+                </div>
+              </DialogHeader>
+
+              <ScrollArea className="flex-1 min-h-0">
                 {notifications.length === 0 ? (
-                  <div className="flex flex-col items-center justify-center py-8 text-muted-foreground">
-                    <Bell className="h-8 w-8 mb-2 opacity-50" />
-                    <p className="text-sm">No notifications</p>
+                  <div className="flex flex-col items-center justify-center py-16 text-muted-foreground">
+                    <div className="rounded-full bg-muted p-4 mb-4">
+                      <Bell className="h-8 w-8 opacity-40" />
+                    </div>
+                    <p className="text-sm font-medium">All caught up!</p>
+                    <p className="text-xs text-muted-foreground/70 mt-1">No notifications to show</p>
                   </div>
                 ) : (
-                  <div className="divide-y">
+                  <div className="divide-y divide-border">
                     {notifications.map((notification) => (
                       <div
                         key={notification.id}
-                        className={`group relative px-4 py-3 hover:bg-muted/50 transition-colors ${
-                          !notification.read ? "bg-primary/5" : ""
+                        className={`group relative px-6 py-4 hover:bg-muted/40 transition-colors ${
+                          !notification.read ? "bg-primary/[0.03]" : ""
                         }`}
                       >
-                        <div className="flex items-start gap-3">
-                          <div className={`mt-0.5 rounded-full p-1.5 ${getTypeStyles(notification.type)}`}>
-                            <Bell className="h-3 w-3" />
+                        <div className="flex items-start gap-4">
+                          <div className={`mt-0.5 rounded-full p-2 shrink-0 ${getTypeStyles(notification.type)}`}>
+                            {getTypeIcon(notification.type)}
                           </div>
                           <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-2">
-                              <p className="text-sm font-medium truncate">
+                            <div className="flex items-center gap-2 mb-1">
+                              <p className="text-sm font-semibold text-foreground">
                                 {notification.title}
                               </p>
                               {!notification.read && (
                                 <span className="h-2 w-2 rounded-full bg-primary shrink-0" />
                               )}
                             </div>
-                            <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">
+                            <p className="text-sm text-muted-foreground leading-relaxed">
                               {notification.message}
                             </p>
-                            <p className="text-xs text-muted-foreground/70 mt-1">
+                            <p className="text-xs text-muted-foreground/60 mt-2">
                               {notification.time}
                             </p>
                           </div>
-                          <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <div className="flex gap-1 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
                             {!notification.read && (
                               <Button
                                 variant="ghost"
                                 size="icon"
-                                className="h-6 w-6"
+                                className="h-7 w-7 text-muted-foreground hover:text-primary"
                                 onClick={() => markAsRead(notification.id)}
+                                title="Mark as read"
                               >
-                                <Check className="h-3 w-3" />
+                                <Check className="h-3.5 w-3.5" />
                               </Button>
                             )}
                             <Button
                               variant="ghost"
                               size="icon"
-                              className="h-6 w-6 text-muted-foreground hover:text-destructive"
+                              className="h-7 w-7 text-muted-foreground hover:text-destructive"
                               onClick={() => dismissNotification(notification.id)}
+                              title="Dismiss"
                             >
-                              <X className="h-3 w-3" />
+                              <X className="h-3.5 w-3.5" />
                             </Button>
                           </div>
                         </div>
@@ -316,8 +347,8 @@ const DashboardHeader = () => {
                   </div>
                 )}
               </ScrollArea>
-            </PopoverContent>
-          </Popover>
+            </DialogContent>
+          </Dialog>
 
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
