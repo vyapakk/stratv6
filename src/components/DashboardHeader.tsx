@@ -258,7 +258,7 @@ const DashboardHeader = () => {
 
           <Dialog open={isOpen} onOpenChange={setIsOpen}>
             <DialogContent className="sm:max-w-[700px] max-h-[90vh] flex flex-col p-0 gap-0">
-              <DialogHeader className="px-6 py-4 border-b border-border shrink-0">
+              <DialogHeader className="px-6 py-4 pr-12 border-b border-border shrink-0">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
                     <DialogTitle className="text-lg font-semibold">Notifications</DialogTitle>
