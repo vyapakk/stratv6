@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
-import { Bell, Search, User, Check, X, BarChart3, Database, Lock } from "lucide-react";
+import { Bell, Search, User, Check, X, BarChart3, Database, Lock, BellRing, AlertTriangle, Info } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -14,10 +14,11 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import stratviewLogo from "@/assets/stratview-logo.png";
 import { categories } from "@/data/datasets";
 import { activeDashboardRoutes } from "@/data/dashboardRoutes";
