@@ -15,19 +15,19 @@ const WelcomeSection = () => {
         <div className="absolute bottom-10 right-10 w-48 h-48 rounded-full bg-primary blur-3xl" />
       </div>
 
-      <div className="container relative z-10 px-0">
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-6">
-          <div className="space-y-2 text-center md:text-left">
+      <div className="relative z-10 max-w-[1400px] mx-auto">
+        <div className="flex flex-col items-start md:flex-row md:items-center md:justify-between gap-6">
+          <div className="space-y-2 text-left">
             <h1 className="text-2xl md:text-3xl font-bold text-primary-foreground font-display">
               Welcome back, John
             </h1>
-            <p className="text-primary-foreground/70 max-w-lg mx-auto md:mx-0">
+            <p className="text-primary-foreground/70 max-w-lg">
               Access comprehensive market research data across industries.
               Explore datasets and interactive dashboards below.
             </p>
           </div>
 
-          <div className="grid grid-cols-3 gap-3 md:flex md:gap-6 w-full md:w-auto">
+          <div className="grid grid-cols-3 gap-3 md:flex md:gap-6 w-full md:w-auto flex-shrink-0">
             {stats.map((stat) => (
               <div
                 key={stat.label}
