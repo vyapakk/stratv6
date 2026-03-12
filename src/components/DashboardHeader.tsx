@@ -257,13 +257,13 @@ const DashboardHeader = () => {
           </Button>
 
           <Dialog open={isOpen} onOpenChange={setIsOpen}>
-            <DialogContent className="sm:max-w-[700px] max-h-[90vh] flex flex-col p-0 gap-0">
-              <DialogHeader className="px-6 py-4 pr-12 border-b border-border shrink-0">
-                <div className="flex items-center justify-between">
+            <DialogContent className="sm:max-w-[700px] w-[calc(100%-32px)] max-h-[90vh] flex flex-col p-0 gap-0">
+              <DialogHeader className="px-4 sm:px-6 py-4 pr-12 sm:pr-12 border-b border-border shrink-0">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 sm:gap-0">
                   <div className="flex items-center gap-3">
-                    <DialogTitle className="text-lg font-semibold">Notifications</DialogTitle>
+                    <DialogTitle className="text-base sm:text-lg font-semibold">Notifications</DialogTitle>
                     {unreadCount > 0 && (
-                      <Badge variant="secondary" className="text-xs font-medium">
+                      <Badge variant="secondary" className="text-xs font-medium shrink-0">
                         {unreadCount} new
                       </Badge>
                     )}
@@ -272,7 +272,7 @@ const DashboardHeader = () => {
                     <Button
                       variant="ghost"
                       size="sm"
-                      className="text-xs text-muted-foreground hover:text-foreground h-auto py-1.5 px-3"
+                      className="text-xs text-muted-foreground hover:text-foreground h-auto py-1.5 px-2 sm:px-3 self-start sm:self-auto"
                       onClick={markAllAsRead}
                     >
                       Mark all as read
