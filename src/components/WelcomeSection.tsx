@@ -16,8 +16,8 @@ const WelcomeSection = () => {
       </div>
 
       <div className="relative z-10 max-w-[1400px] mx-auto">
-        <div className="flex flex-col items-start md:flex-row md:items-center md:justify-between gap-6">
-          <div className="space-y-2 text-left">
+        <div className="flex flex-col items-center md:flex-row md:items-center md:justify-between gap-6">
+          <div className="space-y-2 text-center md:text-left">
             <h1 className="text-2xl md:text-3xl font-bold text-primary-foreground font-display">
               Welcome back, John
             </h1>
