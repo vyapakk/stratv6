@@ -15,32 +15,30 @@ const WelcomeSection = () => {
         <div className="absolute bottom-10 right-10 w-48 h-48 rounded-full bg-primary blur-3xl" />
       </div>
 
-      <div className="relative z-10 max-w-[1400px] mx-auto">
-        <div className="flex flex-col items-center md:flex-row md:items-center md:justify-between gap-6">
-          <div className="space-y-2 text-center md:text-left">
-            <h1 className="text-2xl md:text-3xl font-bold text-primary-foreground font-display">
-              Welcome back, John
-            </h1>
-            <p className="text-primary-foreground/70 max-w-lg">
-              Access comprehensive market research data across industries.
-              Explore datasets and interactive dashboards below.
-            </p>
-          </div>
+      <div className="relative z-10 max-w-[1400px] mx-auto flex flex-col items-center text-center gap-6">
+        <div className="space-y-2">
+          <h1 className="text-2xl md:text-3xl font-bold text-primary-foreground font-display">
+            Welcome back, John
+          </h1>
+          <p className="text-primary-foreground/70 max-w-lg mx-auto">
+            Access comprehensive market research data across industries.
+            Explore datasets and interactive dashboards below.
+          </p>
+        </div>
 
-          <div className="grid grid-cols-3 gap-3 md:flex md:gap-6 w-full md:w-auto flex-shrink-0">
-            {stats.map((stat) => (
-              <div
-                key={stat.label}
-                className="flex flex-col items-center p-3 md:p-4 rounded-xl bg-primary-foreground/10 backdrop-blur-sm border border-primary-foreground/10"
-              >
-                <stat.icon className="h-4 w-4 md:h-5 md:w-5 text-accent mb-1.5 md:mb-2" />
-                <span className="text-lg md:text-2xl font-bold text-primary-foreground font-display">
-                  {stat.value}
-                </span>
-                <span className="text-[10px] md:text-xs text-primary-foreground/60">{stat.label}</span>
-              </div>
-            ))}
-          </div>
+        <div className="grid grid-cols-3 gap-3 md:gap-6 w-auto">
+          {stats.map((stat) => (
+            <div
+              key={stat.label}
+              className="flex flex-col items-center p-3 md:p-4 rounded-xl bg-primary-foreground/10 backdrop-blur-sm border border-primary-foreground/10"
+            >
+              <stat.icon className="h-4 w-4 md:h-5 md:w-5 text-accent mb-1.5 md:mb-2" />
+              <span className="text-lg md:text-2xl font-bold text-primary-foreground font-display">
+                {stat.value}
+              </span>
+              <span className="text-[10px] md:text-xs text-primary-foreground/60">{stat.label}</span>
+            </div>
+          ))}
         </div>
       </div>
     </section>
