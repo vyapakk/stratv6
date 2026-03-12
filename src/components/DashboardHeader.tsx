@@ -145,6 +145,17 @@ const DashboardHeader = () => {
     setNotifications((prev) => prev.filter((n) => n.id !== id));
   };
 
+  const getTypeIcon = (type: Notification["type"]) => {
+    switch (type) {
+      case "update":
+        return <BellRing className="h-4 w-4" />;
+      case "alert":
+        return <AlertTriangle className="h-4 w-4" />;
+      case "info":
+        return <Info className="h-4 w-4" />;
+    }
+  };
+
   const getTypeStyles = (type: Notification["type"]) => {
     switch (type) {
       case "update":
