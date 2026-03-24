@@ -1,35 +1,52 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { ArrowLeft, ChevronRight, BarChart3, Lock } from "lucide-react";
+import { ArrowLeft, ChevronRight, BarChart3, Lock, Loader2 } from "lucide-react";
 import { motion } from "framer-motion";
 import DashboardHeader from "@/components/DashboardHeader";
 import AccessRequestDialog from "@/components/AccessRequestDialog";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { categories } from "@/data/datasets";
+import { useAppDispatch, useAppSelector } from "@/store/hooks";
+import { fetchSubCategories } from "@/store/slices/categorySlice";
 import { activeDashboardRoutes } from "@/data/dashboardRoutes";
 import AppFooter from "@/components/AppFooter";
 
 const DatasetDetail = () => {
-  const { datasetId } = useParams<{ datasetId: string }>();
+  const { slug } = useParams<{ slug: string }>();
   const navigate = useNavigate();
+  const dispatch = useAppDispatch();
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [selectedDashboardSlug, setSelectedDashboardSlug] = useState("");
 
-  // Find the dataset and its parent category
-  let dataset: { id: string; name: string; dashboards: { id: string; name: string; purchased: boolean }[] } | undefined;
-  let parentCategory: (typeof categories)[0] | undefined;
+  // Read subCategories from Redux state
+  const { subCategories, isSubCategoriesLoading } = useAppSelector((state) => state.categories);
 
-  for (const cat of categories) {
-    const found = cat.datasets.find((d) => d.id === datasetId);
-    if (found) {
-      dataset = found;
-      parentCategory = cat;
-      break;
+  // Trigger fetch if subCategories are empty (handles page refresh)
+  useEffect(() => {
+    if (subCategories.length === 0 && !isSubCategoriesLoading) {
+      dispatch(fetchSubCategories("all"));
     }
+  }, [subCategories.length, isSubCategoriesLoading, dispatch]);
+
+  // Find the dataset (subCategory) in the Redux state
+  const dataset = subCategories.find((d) => d.slug === slug);
+  console.log("DatasetDetail - Found dataset:", dataset);
+
+  if (isSubCategoriesLoading && !dataset) {
+    return (
+      <div className="min-h-screen bg-background">
+        <DashboardHeader />
+        <div className="container px-4 md:px-6 py-32 flex flex-col items-center justify-center">
+          <Loader2 className="h-10 w-10 animate-spin text-primary mb-4" />
+          <p className="text-muted-foreground animate-pulse">Loading dataset details...</p>
+        </div>
+      </div>
+    );
   }
 
-  if (!dataset || !parentCategory) {
+
+  if (!dataset) {
     return (
       <div className="min-h-screen bg-background">
         <DashboardHeader />
@@ -44,23 +61,16 @@ const DatasetDetail = () => {
     );
   }
 
-  const hasAnyPurchased = dataset.dashboards.some((d) => d.purchased);
   const purchasedCount = dataset.dashboards.filter((d) => d.purchased).length;
-  const Icon = parentCategory.icon;
+  const Icon = BarChart3;
 
-  const iconBgStyles: Record<string, string> = {
-    teal: "bg-primary text-primary-foreground",
-    navy: "bg-secondary text-secondary-foreground",
-    mint: "gradient-accent text-accent-foreground",
-    "teal-dark": "bg-teal-dark text-primary-foreground",
-  };
-
-  const handleDashboardClick = (dashboard: { id: string; purchased: boolean }) => {
+  const handleDashboardClick = (dashboard: { slug: string; purchased: boolean }) => {
     if (!dashboard.purchased) {
+      setSelectedDashboardSlug(dashboard.slug);
       setDialogOpen(true);
       return;
     }
-    const route = activeDashboardRoutes[dashboard.id];
+    const route = activeDashboardRoutes[dashboard.slug as keyof typeof activeDashboardRoutes];
     if (route) {
       navigate(route);
     }
@@ -70,7 +80,6 @@ const DatasetDetail = () => {
     <div className="min-h-screen bg-background overflow-x-hidden">
       <DashboardHeader />
 
-      {/* Hero section */}
       <section className="relative overflow-hidden gradient-hero py-8 md:py-10 px-4 md:px-6">
         <div className="absolute inset-0 opacity-10">
           <div className="absolute top-10 left-10 w-64 h-64 rounded-full bg-accent blur-3xl" />
@@ -85,9 +94,7 @@ const DatasetDetail = () => {
             <ArrowLeft className="mr-2 h-4 w-4" /> Back to Datasets
           </Button>
           <div className="flex items-start gap-3 md:gap-4">
-            <div
-              className={`flex h-11 w-11 md:h-14 md:w-14 shrink-0 items-center justify-center rounded-xl ${iconBgStyles[parentCategory.color]}`}
-            >
+            <div className={`flex h-11 w-11 md:h-14 md:w-14 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary`}>
               <Icon className="h-5 w-5 md:h-7 md:w-7" />
             </div>
             <div className="min-w-0 flex-1">
@@ -96,9 +103,9 @@ const DatasetDetail = () => {
               </h1>
               <div className="flex flex-wrap items-center gap-2 mt-1">
                 <Badge variant="secondary" className="bg-primary-foreground/10 text-primary-foreground/80 border-0 text-xs">
-                  {parentCategory.title}
+                  {dataset.category_name}
                 </Badge>
-                {!hasAnyPurchased && (
+                {!dataset.purchased && (
                   <Badge variant="secondary" className="bg-destructive/20 text-primary-foreground/90 border-0 text-xs">
                     <Lock className="h-3 w-3 mr-1" /> Not Purchased
                   </Badge>
@@ -112,14 +119,11 @@ const DatasetDetail = () => {
         </div>
       </section>
 
-      {/* Dashboard listing */}
       <main className="container px-4 md:px-6 py-8">
         <div className="mb-6">
-          <h2 className="text-xl font-semibold text-foreground mb-1">
-            Available Dashboards
-          </h2>
+          <h2 className="text-xl font-semibold text-foreground mb-1">Available Dashboards</h2>
           <p className="text-sm text-muted-foreground">
-            {hasAnyPurchased
+            {(purchasedCount > 0)
               ? "Select an unlocked dashboard to explore detailed market insights"
               : "These dashboards are available with this dataset. Submit a request to get access."}
           </p>
@@ -128,30 +132,22 @@ const DatasetDetail = () => {
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
           {dataset.dashboards.map((dashboard, index) => {
             const isDashboardPurchased = dashboard.purchased;
-            const isActive = isDashboardPurchased && !!activeDashboardRoutes[dashboard.id];
-            const isComingSoon = isDashboardPurchased && !activeDashboardRoutes[dashboard.id];
+            const isActive = isDashboardPurchased && !!activeDashboardRoutes[dashboard.slug as keyof typeof activeDashboardRoutes];
             return (
               <motion.div
-                key={dashboard.id}
+                key={dashboard.slug}
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.3, delay: index * 0.08 }}
               >
                 <Card
-                  onClick={() => {
-                    if (!isDashboardPurchased) {
-                      handleDashboardClick(dashboard);
-                    } else if (isActive) {
-                      navigate(activeDashboardRoutes[dashboard.id]);
-                    }
-                  }}
-                  className={`group transition-all duration-300 ${
-                    !isDashboardPurchased
-                      ? "cursor-pointer opacity-75 hover:opacity-100 hover:shadow-card-hover"
-                      : isActive
+                  onClick={() => handleDashboardClick(dashboard)}
+                  className={`group transition-all duration-300 ${!isDashboardPurchased
+                    ? "cursor-pointer opacity-75 hover:opacity-100 hover:shadow-card-hover"
+                    : isActive
                       ? "cursor-pointer hover:shadow-card-hover hover:border-primary/30"
                       : "opacity-60 cursor-not-allowed"
-                  }`}
+                    }`}
                 >
                   <CardContent className="p-4 md:p-5">
                     <div className="flex items-center gap-3 md:gap-4">
@@ -159,21 +155,16 @@ const DatasetDetail = () => {
                         <BarChart3 className="h-4 w-4 md:h-5 md:w-5" />
                       </div>
                       <div className="flex-1 min-w-0">
-                        <h3 className={`font-medium text-sm md:text-base transition-colors truncate ${
-                          !isDashboardPurchased
-                            ? "text-muted-foreground group-hover:text-foreground"
-                            : isActive
+                        <h3 className={`font-medium text-sm md:text-base transition-colors truncate ${!isDashboardPurchased
+                          ? "text-muted-foreground group-hover:text-foreground"
+                          : isActive
                             ? "text-card-foreground group-hover:text-primary"
                             : "text-muted-foreground"
-                        }`}>
+                          }`}>
                           {dashboard.name}
                         </h3>
                         <p className="text-xs text-muted-foreground mt-1">
-                          {!isDashboardPurchased
-                            ? "Access required"
-                            : isActive
-                            ? "Interactive market dashboard"
-                            : "Coming soon"}
+                          {!isDashboardPurchased ? "Access required" : isActive ? "Interactive market dashboard" : "Coming soon"}
                         </p>
                       </div>
                       {!isDashboardPurchased ? (
@@ -198,6 +189,7 @@ const DatasetDetail = () => {
         open={dialogOpen}
         onOpenChange={setDialogOpen}
         datasetName={dataset.name}
+        dashboardSlug={selectedDashboardSlug}
       />
     </div>
   );

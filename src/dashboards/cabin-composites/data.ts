@@ -107,7 +107,11 @@ export function useMarketData(dataUrl: string): UseMarketDataResult {
     setIsLoading(true);
     setError(null);
     try {
-      const response = await fetch(dataUrl, { cache: "no-store" });
+      const baseUrl = import.meta.env.BASE_URL.endsWith('/') 
+        ? import.meta.env.BASE_URL.slice(0, -1) 
+        : import.meta.env.BASE_URL;
+      const fullUrl = `${baseUrl}${dataUrl}`;
+      const response = await fetch(fullUrl, { cache: "no-store" });
       if (!response.ok) throw new Error(`Failed to fetch market data: ${response.statusText}`);
       const compact: CompactMarketData = await response.json();
       const { years } = compact;

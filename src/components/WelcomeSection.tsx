@@ -1,6 +1,8 @@
 import { TrendingUp, Database, BarChart3 } from "lucide-react";
+import { useAppSelector } from "@/store/hooks";
 
 const WelcomeSection = () => {
+  const { user } = useAppSelector((state) => state.auth);
   const stats = [
     { icon: Database, label: "Datasets", value: "24+" },
     { icon: BarChart3, label: "Dashboards", value: "150+" },
@@ -18,7 +20,7 @@ const WelcomeSection = () => {
       <div className="relative z-10 max-w-[1400px] mx-auto flex flex-col items-center text-center gap-6">
         <div className="space-y-2">
           <h1 className="text-2xl md:text-3xl font-bold text-primary-foreground font-display">
-            Welcome back, John
+            Welcome back, {user?.name?.split(" ")[0] || "Guest"}
           </h1>
           <p className="text-primary-foreground/70 max-w-lg mx-auto">
             Access comprehensive market research data across industries.

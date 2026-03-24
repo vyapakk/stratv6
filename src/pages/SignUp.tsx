@@ -1,5 +1,7 @@
 import { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
+import { useAppDispatch, useAppSelector } from "@/store/hooks";
+import { signupUser } from "@/store/slices/authSlice";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -8,6 +10,8 @@ import { ArrowRight, Loader2, ArrowLeft, Eye, EyeOff, Check, X } from "lucide-re
 import BackgroundPattern from "@/components/BackgroundPattern";
 import stratviewLogo from "@/assets/stratview-logo.png";
 import stratviewLogoWhite from "@/assets/stratview-logo-white.png";
+import { toast } from "sonner";
+
 
 const industries = [
   "Aerospace & Defense",
@@ -37,10 +41,18 @@ const SignUp = () => {
     confirmPassword: "",
   });
   const [selectedIndustries, setSelectedIndustries] = useState<string[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState("");
+  const [localError, setLocalError] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+
+  const navigate = useNavigate();
+  const dispatch = useAppDispatch();
+  const { isLoading, error: reduxError } = useAppSelector((state: any) => state.auth);
+
+  // Map industry strings to temporary IDs for the API (as requested by 'interested_in: 1,2,3')
+  const getIndustryIds = () => {
+    return selectedIndustries.map(ind => industries.indexOf(ind) + 1).join(',');
+  };
 
   const passwordRules = [
     { label: "At least 8 characters", test: (p: string) => p.length >= 8 },
@@ -64,7 +76,7 @@ const SignUp = () => {
         ? prev.filter((i) => i !== industry)
         : [...prev, industry]
     );
-    setError("");
+    setLocalError("");
   };
 
   /**
@@ -93,40 +105,70 @@ const SignUp = () => {
    */
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+    setLocalError("");
+
     if (!isPasswordValid) {
-      setError("Please ensure your password meets all requirements.");
+      const errorMsg = "Please ensure your password meets all requirements.";
+      setLocalError(errorMsg);
+      toast.error("Validation Error", {
+        description: errorMsg,
+      });
       return;
     }
 
     if (!passwordsMatch) {
-      setError("Passwords do not match.");
+      const errorMsg = "Passwords do not match.";
+      setLocalError(errorMsg);
+      toast.error("Validation Error", {
+        description: errorMsg,
+      });
       return;
     }
 
     if (selectedIndustries.length === 0) {
-      setError("Please select at least one industry of interest.");
+      const errorMsg = "Please select at least one industry of interest.";
+      setLocalError(errorMsg);
+      toast.error("Validation Error", {
+        description: errorMsg,
+      });
       return;
     }
 
-    setIsLoading(true);
-    
+    const signupPayload = {
+      company: formData.company,
+      name: formData.name,
+      designation: formData.designation,
+      phone_number: formData.phone, // mapping UI 'phone' to API 'phone_number'
+      email: formData.email,
+      password: formData.password,
+      confirm_password: formData.confirmPassword,
+      interested_in: getIndustryIds() // mapping array to comma-separated ID string
+    };
+
     try {
-      // TODO: Replace with actual API call
-      // const response = await authService.register({
-      //   ...formData,
-      //   industries: selectedIndustries
-      // });
-      await new Promise((resolve) => setTimeout(resolve, 1500)); // Simulated delay
-      
-      console.log('Registration attempt:', { ...formData, industries: selectedIndustries });
-      // TODO: Handle successful registration (redirect, show success message, etc.)
-    } catch (error) {
-      // TODO: Handle registration error (show validation errors, etc.)
-      console.error('Registration failed:', error);
-      setError('Registration failed. Please try again.');
-    } finally {
-      setIsLoading(false);
+      const resultAction = await dispatch(signupUser(signupPayload));
+
+      if (signupUser.fulfilled.match(resultAction)) {
+        // Success: Redirect to login
+        toast.success("Account Created", {
+          description: "Your account has been created successfully. You can now sign in.",
+        });
+        navigate('/');
+      } else {
+        // Error is handled by Redux state, but we can set local error if needed
+        const errorMsg = resultAction.payload as string || "Registration failed. Please try again.";
+        console.error('Registration failed:', resultAction.payload);
+        toast.error("Registration Failed", {
+          description: errorMsg,
+        });
+      }
+    } catch (err) {
+      console.error('Registration exception:', err);
+      const errorMsg = 'An unexpected error occurred. Please try again.';
+      setLocalError(errorMsg);
+      toast.error("Error", {
+        description: errorMsg,
+      });
     }
   };
 
@@ -135,15 +177,15 @@ const SignUp = () => {
       {/* Left Panel - Branding */}
       <div className="hidden lg:flex lg:w-1/2 xl:w-1/2 relative">
         <BackgroundPattern />
-        
+
         <div className="relative z-10 flex flex-col justify-between p-12 xl:p-16 w-full">
           {/* Logo and Main content grouped together */}
           <div className="space-y-8">
             {/* Logo */}
             <div className="animate-fade-in-up">
-              <img 
-                src={stratviewLogoWhite} 
-                alt="Stratview Research" 
+              <img
+                src={stratviewLogoWhite}
+                alt="Stratview Research"
                 className="h-16 xl:h-20 w-auto"
               />
             </div>
@@ -156,7 +198,7 @@ const SignUp = () => {
                   <span className="block text-stratview-mint">Stratview One</span>
                 </h1>
                 <p className="text-lg xl:text-xl text-primary-foreground/80 max-w-lg leading-relaxed">
-                  Get access to comprehensive market research data, industry insights, 
+                  Get access to comprehensive market research data, industry insights,
                   and strategic intelligence tailored to your business needs.
                 </p>
               </div>
@@ -177,16 +219,16 @@ const SignUp = () => {
         <div className="w-full max-w-lg mx-auto space-y-6">
           {/* Mobile Logo */}
           <div className="lg:hidden flex justify-center mb-6">
-            <img 
-              src={stratviewLogo} 
-              alt="Stratview Research" 
+            <img
+              src={stratviewLogo}
+              alt="Stratview Research"
               className="h-14 w-auto"
             />
           </div>
 
           {/* Back Link */}
-          <Link 
-            to="/" 
+          <Link
+            to="/"
             className="inline-flex items-center text-sm text-muted-foreground hover:text-foreground transition-colors"
           >
             <ArrowLeft className="h-4 w-4 mr-1" />
@@ -400,9 +442,6 @@ const SignUp = () => {
                   </div>
                 ))}
               </div>
-              {error && (
-                <p className="text-sm text-destructive">{error}</p>
-              )}
             </div>
 
             <Button
