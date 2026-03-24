@@ -76,7 +76,6 @@ const baseCategories = [
         id: "aircraft-interiors",
         name: "Aircraft Interiors",
         dashboards: [] as { id: string; name: string; purchased: boolean }[],
-        // ↑ Real dashboards auto-merged from registry
       },
       {
         id: "commercial-aircraft",
@@ -168,7 +167,6 @@ const baseCategories = [
         id: "prepregs",
         name: "Prepregs",
         dashboards: [] as { id: string; name: string; purchased: boolean }[],
-        // ↑ Real dashboards auto-merged from registry
       },
     ],
   },

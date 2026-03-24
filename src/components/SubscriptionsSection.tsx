@@ -1,9 +1,17 @@
 import { useNavigate } from "react-router-dom";
-import { ChevronRight, Package } from "lucide-react";
+import { useAppSelector } from "@/store/hooks";
+import { ChevronRight, Package, Lock, Layers, Plane, Car, Building2, MoreHorizontal } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { categories } from "@/data/datasets";
+
+const iconMap: Record<string, any> = {
+  Layers,
+  Plane,
+  Car,
+  Building2,
+  MoreHorizontal,
+};
 
 const iconBgStyles: Record<string, string> = {
   teal: "bg-primary text-primary-foreground",
@@ -14,23 +22,10 @@ const iconBgStyles: Record<string, string> = {
 
 const SubscriptionsSection = () => {
   const navigate = useNavigate();
+  const { subCategories } = useAppSelector(state => state.categories);
 
-  // Show datasets that have at least one purchased dashboard
-  const subscribedDatasets = categories.flatMap((category) =>
-    category.datasets
-      .filter((dataset) => dataset.dashboards.some((d) => d.purchased))
-      .map((dataset) => {
-        const purchasedCount = dataset.dashboards.filter((d) => d.purchased).length;
-        return {
-          ...dataset,
-          category: category.title,
-          categoryIcon: category.icon,
-          categoryColor: category.color,
-          purchasedCount,
-        };
-      })
-  );
-
+  // Filter subcategories that have at least one purchased dashboard
+  const subscribedDatasets = subCategories.filter((sub) => sub.purchased);
   return (
     <section className="mb-10">
       <div className="mb-4">
@@ -52,18 +47,25 @@ const SubscriptionsSection = () => {
       ) : (
         <div className="grid grid-cols-1 gap-3 md:grid-cols-2 lg:grid-cols-3">
           {subscribedDatasets.map((dataset, index) => {
-            const Icon = dataset.categoryIcon;
+            // Use the dynamically provided icon from the backend or fallback to MoreHorizontal
+            const Icon = dataset.category_icon && iconMap[dataset.category_icon]
+              ? iconMap[dataset.category_icon]
+              : MoreHorizontal;
+
+            const colorKey = dataset.category_color || "teal";
+            const bgClass = iconBgStyles[colorKey] || iconBgStyles.teal;
+
             return (
               <Card
                 key={dataset.id}
-                onClick={() => navigate(`/dataset/${dataset.id}`)}
+                onClick={() => navigate(`/dataset/${dataset.slug}`)}
                 className="group cursor-pointer transition-all duration-300 hover:shadow-card-hover hover:border-primary/30 animate-fade-in-up border-primary/20 bg-primary/5"
                 style={{ animationDelay: `${index * 50}ms` }}
               >
                 <CardContent className="p-4">
                   <div className="flex items-center gap-4">
                     <div
-                      className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl transition-transform duration-300 group-hover:scale-105 ${iconBgStyles[dataset.categoryColor]}`}
+                      className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl transition-transform duration-300 group-hover:scale-105 ${bgClass}`}
                     >
                       <Icon className="h-5 w-5" />
                     </div>
@@ -73,10 +75,10 @@ const SubscriptionsSection = () => {
                       </h3>
                       <div className="flex items-center gap-2 mt-1">
                         <Badge variant="secondary" className="text-xs">
-                          {dataset.category}
+                          {dataset.category_name}
                         </Badge>
                         <span className="text-xs text-muted-foreground">
-                          {dataset.purchasedCount} of {dataset.dashboards.length} unlocked
+                          {dataset.purchased_count} of {dataset.total_dashboards} unlocked
                         </span>
                       </div>
                     </div>

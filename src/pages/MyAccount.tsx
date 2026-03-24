@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, User, Mail, Building2, Phone, Briefcase, Pencil, Save, X, Calendar, Lock, Send, CheckCircle2 } from "lucide-react";
+import { ArrowLeft, User, Mail, Building2, Phone, Briefcase, Pencil, Save, X, Calendar, Lock, Send, CheckCircle2, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -9,118 +9,117 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
-import { toast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 import DashboardHeader from "@/components/DashboardHeader";
 import AppFooter from "@/components/AppFooter";
-import { categories } from "@/data/datasets";
+import { activeDashboardRoutes } from "@/data/dashboardRoutes";
+import { useAppDispatch, useAppSelector } from "@/store/hooks";
+import { fetchSubscriptions, submitInquiry, resetInquiryStatus } from "@/store/slices/subscriptionSlice";
+import { fetchSubCategories } from "@/store/slices/categorySlice";
+import { fetchMe, updateProfile } from "@/store/slices/authSlice";
+import { useEffect } from "react";
 
-/**
- * BACKEND INTEGRATION POINT: My Account
- *
- * Replace mock data below with API calls:
- * - GET /api/user/profile → personal info
- * - PUT /api/user/profile → update personal info
- * - GET /api/user/subscriptions → purchased dashboards with validity
- * - POST /api/user/inquiry → subscription inquiry form
- */
-
-// Mock user profile (matches sign-up fields)
-const mockProfile = {
-  name: "John Doe",
-  email: "john.doe@company.com",
-  company: "Acme Aerospace Inc.",
-  designation: "Research Analyst",
-  phone: "+1 (555) 234-5678",
-};
-
-// Mock subscriptions — purchased dashboards with validity
-const mockSubscriptions = (() => {
-  const subs: {
-    categoryTitle: string;
-    datasetName: string;
-    dashboardName: string;
-    dashboardId: string;
-    validFrom: string;
-    validTo: string;
-  }[] = [];
-  for (const cat of categories) {
-    for (const ds of cat.datasets) {
-      for (const db of ds.dashboards) {
-        if (db.purchased) {
-          subs.push({
-            categoryTitle: cat.title,
-            datasetName: ds.name,
-            dashboardName: db.name,
-            dashboardId: db.id,
-            validFrom: "2025-01-15",
-            validTo: "2026-01-14",
-          });
-        }
-      }
-    }
-  }
-  return subs;
-})();
-
-// Group subscriptions by dataset
-const groupedSubscriptions = (() => {
-  const map = new Map<string, typeof mockSubscriptions>();
-  for (const sub of mockSubscriptions) {
-    const key = `${sub.categoryTitle} — ${sub.datasetName}`;
-    if (!map.has(key)) map.set(key, []);
-    map.get(key)!.push(sub);
-  }
-  return Array.from(map.entries());
-})();
-
-// All available dashboards for inquiry dropdown
-const allDashboards = (() => {
+// All available dashboards for inquiry dropdown - transformed from Redux state
+const generateAvailableDashboards = (subCategories: any[], subscriptions: any[]) => {
   const list: { id: string; label: string }[] = [];
-  for (const cat of categories) {
-    for (const ds of cat.datasets) {
-      for (const db of ds.dashboards) {
-        if (!db.purchased) {
-          list.push({ id: db.id, label: `${cat.title} › ${ds.name} › ${db.name}` });
-        }
+  subCategories.forEach(sub => {
+    sub.dashboards.forEach((db: any) => {
+      const isPurchased = subscriptions.some(s => s.dashboard_slug === db.slug);
+      if (!isPurchased) {
+        list.push({ id: db.slug, label: `${sub.category_name} › ${sub.name} › ${db.name}` });
       }
-    }
-  }
+    });
+  });
   return list;
-})();
+};
 
 const MyAccount = () => {
   const navigate = useNavigate();
+  const dispatch = useAppDispatch();
+
+  // Get data from Redux
+  const auth = useAppSelector((state: any) => state.auth);
+  const user = auth.user;
+  const { subscriptions, isLoading, inquiryStatus } = useAppSelector((state: any) => state.subscriptions);
+  const { subCategories, isSubCategoriesLoading } = useAppSelector((state: any) => state.categories);
+
   const [isEditing, setIsEditing] = useState(false);
-  const [profile, setProfile] = useState(mockProfile);
-  const [editData, setEditData] = useState(mockProfile);
-  const [inquirySubmitted, setInquirySubmitted] = useState(false);
+  const [editData, setEditData] = useState({
+    name: user?.name || "",
+    company: user?.company || "",
+    designation: user?.designation || "",
+    phone_number: user?.phone_number || "",
+  });
+
   const [inquiry, setInquiry] = useState({
     dashboard: "",
     message: "",
   });
 
-  const handleSave = () => {
-    setProfile(editData);
-    setIsEditing(false);
-    toast({ title: "Profile updated", description: "Your personal information has been saved." });
+  useEffect(() => {
+    if (user) {
+      setEditData({
+        name: user.name || "",
+        company: user.company || "",
+        designation: user.designation || "",
+        phone_number: user.phone_number || "",
+      });
+    }
+  }, [user]);
+
+  useEffect(() => {
+    if (user?.id) {
+      // Refresh user profile only
+      dispatch(fetchMe());
+      // Subscriptions and Categories are handled globally in App.tsx
+    }
+    return () => {
+      dispatch(resetInquiryStatus());
+    };
+  }, [user?.id, dispatch]);
+
+  const allDashboards = generateAvailableDashboards(subCategories, subscriptions);
+
+  const { isUpdatingProfile } = useAppSelector((state: any) => state.auth);
+
+  const handleSave = async () => {
+    try {
+      await dispatch(updateProfile(editData)).unwrap();
+      setIsEditing(false);
+      toast.success("Profile updated successfully");
+    } catch (err: any) {
+      toast.error("Update failed", { description: err || "Please try again." });
+    }
   };
 
   const handleCancel = () => {
-    setEditData(profile);
+    if (user) {
+      setEditData({
+        name: user.name || "",
+        company: user.company || "",
+        designation: user.designation || "",
+        phone_number: user.phone_number || "",
+      });
+    }
     setIsEditing(false);
   };
 
   const handleInquirySubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!inquiry.dashboard) {
-      toast({ title: "Please select a dashboard", variant: "destructive" });
+    if (!inquiry.dashboard || !user?.id) {
+      toast.error("Validation Error", { description: "Please select a dashboard" });
       return;
     }
-    // TODO: POST /api/user/inquiry
-    console.log("Inquiry submitted:", inquiry);
-    setInquirySubmitted(true);
-    toast({ title: "Inquiry sent!", description: "Our team will get back to you shortly." });
+
+    dispatch(submitInquiry({
+      user_id: user.id,
+      dashboard_slug: inquiry.dashboard,
+      message: inquiry.message,
+      type: 'access_request'
+    }));
   };
+
+  const inquirySubmitted = inquiryStatus === 'success';
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
@@ -154,11 +153,15 @@ const MyAccount = () => {
               </Button>
             ) : (
               <div className="flex gap-2">
-                <Button variant="outline" size="sm" onClick={handleCancel}>
+                <Button variant="outline" size="sm" onClick={handleCancel} disabled={isUpdatingProfile}>
                   <X className="h-4 w-4 mr-1" /> Cancel
                 </Button>
-                <Button size="sm" onClick={handleSave}>
-                  <Save className="h-4 w-4 mr-1" /> Save
+                <Button size="sm" onClick={handleSave} disabled={isUpdatingProfile}>
+                  {isUpdatingProfile ? (
+                    <><Loader2 className="h-4 w-4 mr-1 animate-spin" /> Saving...</>
+                  ) : (
+                    <><Save className="h-4 w-4 mr-1" /> Save</>
+                  )}
                 </Button>
               </div>
             )}
@@ -176,7 +179,7 @@ const MyAccount = () => {
                   className="h-10"
                 />
               ) : (
-                <p className="text-foreground pt-2.5 font-medium">{profile.name}</p>
+                <p className="text-foreground pt-2.5 font-medium">{user?.name}</p>
               )}
             </div>
 
@@ -188,7 +191,7 @@ const MyAccount = () => {
                 <Mail className="h-4 w-4" /> Email
               </Label>
               <div className="flex items-center gap-2 pt-2.5">
-                <p className="text-foreground font-medium">{profile.email}</p>
+                <p className="text-foreground font-medium">{user?.email}</p>
                 <span title="Email cannot be changed"><Lock className="h-3.5 w-3.5 text-muted-foreground/50" /></span>
               </div>
             </div>
@@ -207,7 +210,7 @@ const MyAccount = () => {
                   className="h-10"
                 />
               ) : (
-                <p className="text-foreground pt-2.5 font-medium">{profile.company}</p>
+                <p className="text-foreground pt-2.5 font-medium">{user?.company || "Not Provided"}</p>
               )}
             </div>
 
@@ -225,7 +228,7 @@ const MyAccount = () => {
                   className="h-10"
                 />
               ) : (
-                <p className="text-foreground pt-2.5 font-medium">{profile.designation}</p>
+                <p className="text-foreground pt-2.5 font-medium">{user?.designation || "Not Provided"}</p>
               )}
             </div>
 
@@ -238,12 +241,12 @@ const MyAccount = () => {
               </Label>
               {isEditing ? (
                 <Input
-                  value={editData.phone}
-                  onChange={(e) => setEditData({ ...editData, phone: e.target.value })}
+                  value={editData.phone_number}
+                  onChange={(e) => setEditData({ ...editData, phone_number: e.target.value })}
                   className="h-10"
                 />
               ) : (
-                <p className="text-foreground pt-2.5 font-medium">{profile.phone}</p>
+                <p className="text-foreground pt-2.5 font-medium">{user?.phone_number || "Not Provided"}</p>
               )}
             </div>
           </CardContent>
@@ -259,34 +262,38 @@ const MyAccount = () => {
             <CardDescription>Dashboards you currently have access to</CardDescription>
           </CardHeader>
           <CardContent>
-            {groupedSubscriptions.length === 0 ? (
+            {isLoading ? (
+              <div className="flex justify-center py-8">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+              </div>
+            ) : subscriptions.length === 0 ? (
               <p className="text-muted-foreground text-sm py-4">You don't have any active subscriptions yet.</p>
             ) : (
               <div className="space-y-6">
-                {groupedSubscriptions.map(([groupName, subs]) => (
-                  <div key={groupName}>
-                    <h4 className="text-sm font-semibold text-foreground mb-3">{groupName}</h4>
-                    <div className="space-y-2">
-                      {subs.map((sub) => (
-                        <div
-                          key={sub.dashboardId}
-                          className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 rounded-lg border border-border bg-muted/30 px-4 py-3"
-                        >
-                          <span className="text-sm font-medium text-foreground">{sub.dashboardName}</span>
-                          <div className="flex items-center gap-3 text-xs text-muted-foreground">
-                            <span>
-                              From: <span className="font-medium text-foreground">{sub.validFrom}</span>
-                            </span>
-                            <span>
-                              To: <span className="font-medium text-foreground">{sub.validTo}</span>
-                            </span>
-                            <Badge variant="secondary" className="text-[10px]">Active</Badge>
-                          </div>
-                        </div>
-                      ))}
+                <div className="space-y-2">
+                  {subscriptions.map((sub) => (
+                    <div
+                      key={sub.dashboard_id || sub.dashboard_slug}
+                      onClick={() => {
+                        const route = activeDashboardRoutes[sub.dashboard_slug as keyof typeof activeDashboardRoutes];
+                        if (route) navigate(route);
+                        else navigate(`/dataset/${sub.subcategory_slug}`);
+                      }}
+                      className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 rounded-lg border border-border bg-muted/30 px-4 py-3 cursor-pointer hover:bg-muted/50 transition-colors group"
+                    >
+                      <div className="flex flex-col">
+                        <span className="text-sm font-medium text-foreground group-hover:text-primary transition-colors">{sub.dashboard_name}</span>
+                        <span className="text-[10px] text-muted-foreground">{sub.category_name} › {sub.subcategory_name}</span>
+                      </div>
+                      <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                        <span>
+                          Valid From: <span className="font-medium text-foreground">{sub.valid_from}</span>
+                        </span>
+                        <Badge variant="secondary" className="text-[10px] bg-primary/10 text-primary border-0">Active</Badge>
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  ))}
+                </div>
               </div>
             )}
           </CardContent>
@@ -309,7 +316,7 @@ const MyAccount = () => {
                 <p className="text-sm text-muted-foreground max-w-md">
                   Thank you for your interest. Our team will review your request and contact you shortly.
                 </p>
-                <Button variant="outline" size="sm" onClick={() => { setInquirySubmitted(false); setInquiry({ dashboard: "", message: "" }); }}>
+                <Button variant="outline" size="sm" onClick={() => { setInquiry({ dashboard: "", message: "" }); dispatch(resetInquiryStatus()); }}>
                   Submit Another Inquiry
                 </Button>
               </div>

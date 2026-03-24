@@ -1,18 +1,37 @@
-import { useState } from "react";
-import { useNavigate, Link } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { useNavigate, Link, useLocation } from "react-router-dom";
+import { useAppDispatch, useAppSelector } from "@/store/hooks";
+import { loginUser, clearError } from "@/store/slices/authSlice";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Eye, EyeOff, ArrowRight, Loader2 } from "lucide-react";
+import { Eye, EyeOff, ArrowRight, Loader2, Info } from "lucide-react";
+import { toast } from "sonner";
+
 
 const LoginForm = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
+  const [redirectMessage, setRedirectMessage] = useState<string | null>(null);
+
+  const dispatch = useAppDispatch();
+  const { isLoading, error } = useAppSelector((state: any) => state.auth);
+
+  useEffect(() => {
+    // Check if we were redirected from AuthGuard
+    const params = new URLSearchParams(location.search);
+    if (params.get("open_login") === "true") {
+      setRedirectMessage("Please sign in to access that page.");
+    }
+
+    // Clear auth errors when component mounts/location changes
+    dispatch(clearError());
+  }, [location, dispatch]);
 
   /**
    * BACKEND INTEGRATION POINT: Login Handler
@@ -32,26 +51,40 @@ const LoginForm = () => {
    */
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsLoading(true);
-    
+
     try {
-      // TODO: Replace with actual API call
-      // const response = await authService.login({ email, password, rememberMe });
-      await new Promise((resolve) => setTimeout(resolve, 1500)); // Simulated delay
-      
-      // TODO: Handle successful login (redirect, store token, etc.)
-      console.log('Login attempt:', { email, rememberMe });
-      navigate('/dashboard');
-    } catch (error) {
-      // TODO: Handle login error (show toast, set error state, etc.)
-      console.error('Login failed:', error);
-    } finally {
-      setIsLoading(false);
+      // Dispatch the Redux login thunk
+      const resultAction = await dispatch(loginUser({ email, password }));
+
+      if (loginUser.fulfilled.match(resultAction)) {
+        // Handle successful login
+        toast.success("Welcome back!", {
+          description: "You have successfully signed in.",
+        });
+        navigate('/dashboard');
+      } else {
+        // Error is handled by Redux state, but we can catch it here if we want to do something specific
+        console.error('Login failed:', resultAction.payload);
+        toast.error("Login Failed", {
+          description: resultAction.payload as string || "Invalid email or password. Please try again.",
+        });
+      }
+    } catch (err) {
+      console.error('Login exception:', err);
+      toast.error("Error", {
+        description: "An unexpected error occurred. Please try again.",
+      });
     }
   };
 
   return (
     <form onSubmit={handleSubmit} className="space-y-5">
+      {redirectMessage && !error && (
+        <div className="p-3 rounded-md bg-secondary/10 text-secondary text-sm font-medium flex items-center gap-2 animate-in fade-in slide-in-from-top-1">
+          <Info className="h-4 w-4" />
+          {redirectMessage}
+        </div>
+      )}
       <div className="space-y-2">
         <Label htmlFor="email" className="text-sm font-medium text-foreground">
           Email Address
